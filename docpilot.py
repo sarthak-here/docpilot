@@ -48,6 +48,52 @@ except ImportError:
     BS4 = False
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  OLLAMA  (local LLM for AI-powered examples and tech-stack advisor)
+# ══════════════════════════════════════════════════════════════════════════════
+
+OLLAMA_URL = "http://localhost:11434"
+# Ranked preference: best code models first
+_PREFERRED_MODELS = [
+    "gemma4", "gemma3", "gemma2",
+    "llama3.1", "llama3", "llama3.2",
+    "mistral", "phi3", "phi4", "deepseek-coder",
+]
+
+
+def _ollama_available() -> tuple:
+    """Return (True, model_name) if Ollama is running and has a usable model."""
+    try:
+        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=3)
+        if r.status_code != 200:
+            return False, ""
+        installed = [m["name"].split(":")[0] for m in r.json().get("models", [])]
+        for pref in _PREFERRED_MODELS:
+            if pref in installed:
+                return True, r.json()["models"][
+                    [m["name"].split(":")[0] for m in r.json()["models"]].index(pref)
+                ]["name"]
+        if installed:
+            return True, r.json()["models"][0]["name"]
+    except Exception:
+        pass
+    return False, ""
+
+
+def _ollama_generate(prompt: str, model: str, timeout: int = 60) -> Optional[str]:
+    try:
+        r = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={"model": model, "prompt": prompt, "stream": False},
+            timeout=timeout,
+        )
+        if r.status_code == 200:
+            return r.json().get("response", "").strip()
+    except Exception:
+        pass
+    return None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  PYTHON  (PyPI + pydoc stdlib)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -970,6 +1016,32 @@ def _print_python_quickstart(name: str, desc: str = ""):
             if i < len(raw_blocks) - 1:
                 console.print()     # blank line between blocks
 
+    else:
+        # No dict entry and no README examples -- ask the local LLM
+        ok, model = _ollama_available()
+        if ok:
+            console.print(f"\n[dim]  asking {model} for examples...[/dim]")
+            prompt = (
+                f"You are a Python expert. Show me exactly how to use the Python library or module '{name}'.\n"
+                f"Output ONLY Python code (no prose outside of # comments).\n"
+                f"Include:\n"
+                f"1. The correct import statement(s)\n"
+                f"2. 6-10 practical, real-world usage examples with short # comments\n"
+                f"Cover the most commonly used features. Be concise. No markdown fences."
+            )
+            ai_code = _ollama_generate(prompt, model)
+            if ai_code:
+                # strip any accidental markdown fences the model may add
+                ai_code = re.sub(r'^```[a-z]*\n?', '', ai_code, flags=re.MULTILINE)
+                ai_code = re.sub(r'\n?```$', '', ai_code, flags=re.MULTILINE)
+                ai_code = ai_code.strip()
+                console.print(f"\n[bold yellow]Examples (AI - {model}):[/bold yellow]")
+                if RICH:
+                    console.print(Syntax(ai_code, "python", theme="monokai"))
+                else:
+                    for ln in ai_code.splitlines():
+                        console.print(f"  {ln}")
+
 
 def show_python(pkg: str):
     console.print(f"\n[bold cyan]Python docs ->[/bold cyan] [bold white]{pkg}[/bold white]\n")
@@ -1868,6 +1940,54 @@ def show_search(term: str):
         console.print(f"  TLDR       -> https://tldr.inbrowser.app/?search={term}")
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  ASK  (AI tech-stack advisor)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def show_ask(question: str):
+    """Describe what you want to build -- get back a recommended tech stack."""
+    ok, model = _ollama_available()
+    if not ok:
+        console.print(f"\n[red]Ollama is not running.[/red]")
+        console.print("  Start it:      ollama serve")
+        console.print("  Install model: ollama pull gemma4")
+        return
+
+    console.print(f"\n[bold cyan]Tech-stack advisor[/bold cyan]  "
+                  f"[dim]({model})[/dim]\n")
+    console.print(f"[dim]  thinking...[/dim]\n")
+
+    prompt = f"""You are a senior software engineer advising a developer.
+They want to build: {question}
+
+Give a focused, practical answer in this exact structure:
+
+## What to use
+- <library>  --  <one-line reason>
+(list every library/module/tool they need, nothing extra)
+
+## Install
+pip install <all packages on one line>
+
+## Minimal example
+A short but complete working code snippet showing how the key pieces fit together.
+Use real imports. Add brief # comments on important lines.
+
+## When to use each
+One sentence per library on the best use-case or gotcha a pro would want to know.
+
+No marketing language. Be direct. Output plain text + code blocks only."""
+
+    response = _ollama_generate(prompt, model, timeout=90)
+    if not response:
+        console.print("[red]No response from LLM.[/red]")
+        return
+
+    # clean stray markdown fences around the whole reply
+    response = response.strip()
+    console.print(response)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  LIST command  -- show all built-in C++ topics
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1934,6 +2054,10 @@ Examples
     ls.add_argument("category", nargs="?",
                     help="Optional filter: container, algorithm, memory, thread …")
 
+    ak  = sub.add_parser("ask",     aliases=["a"],           help="AI tech-stack advisor (needs Ollama)")
+    ak.add_argument("question", nargs="+",
+                    help="Describe what you want to build, e.g. 'a REST API with auth and database'")
+
     args = ap.parse_args()
 
     if args.cmd in ("python", "py"):
@@ -1946,6 +2070,8 @@ Examples
         show_search(args.term)
     elif args.cmd == "list":
         show_list(args.category)
+    elif args.cmd in ("ask", "a"):
+        show_ask(" ".join(args.question))
     else:
         _repl()
 
@@ -1959,6 +2085,7 @@ def _repl():
             "[cyan]linux[/cyan]  [white]<cmd>[/white]     Linux command  (TLDR + man link)\n"
             "[cyan]cpp[/cyan]    [white]<topic>[/white]   C++ STL reference + code example\n"
             "[cyan]search[/cyan] [white]<term>[/white]    Search all three languages\n"
+            "[cyan]ask[/cyan]    [white]<what>[/white]    AI tech-stack advisor  (needs Ollama)\n"
             "[cyan]list[/cyan]              Browse all C++ STL topics\n\n"
             "[dim]Type  q  or  exit  to quit.[/dim]",
             title="[bold green]DocPilot[/bold green]",
@@ -2009,8 +2136,17 @@ def _repl():
                 console.print("[red]Usage:  search <term>[/red]")
         elif cmd == "list":
             show_list(rest or None)
+        elif cmd in ("ask", "a"):
+            if rest:
+                show_ask(rest)
+            else:
+                console.print("[red]Usage:  ask <describe what you want to build>[/red]")
         elif cmd in ("help", "h", "?"):
-            console.print("[cyan]python[/cyan] <pkg>  |  [cyan]linux[/cyan] <cmd>  |  [cyan]cpp[/cyan] <topic>  |  [cyan]search[/cyan] <term>  |  [cyan]list[/cyan]  |  [cyan]q[/cyan]")
+            console.print(
+                "[cyan]python[/cyan] <pkg>  |  [cyan]linux[/cyan] <cmd>  |  "
+                "[cyan]cpp[/cyan] <topic>  |  [cyan]search[/cyan] <term>  |  "
+                "[cyan]ask[/cyan] <what to build>  |  [cyan]list[/cyan]  |  [cyan]q[/cyan]"
+            )
         else:
             # try auto-detect: single word -> search all
             console.print(f"[dim]Searching all languages for '{raw}'...[/dim]")

@@ -91,9 +91,10 @@ class DocPilotApp(tk.Tk):
 
         self.lang_var = tk.StringVar(value='python')
         lang_drop = ttk.Combobox(search_frame, textvariable=self.lang_var,
-                                 values=['python', 'linux', 'cpp', 'search'],
+                                 values=['python', 'linux', 'cpp', 'search', 'ask'],
                                  state='readonly', width=9, font=FONT)
         lang_drop.pack(side='left', padx=(0, 8))
+        lang_drop.bind('<<ComboboxSelected>>', self._on_lang_change)
 
         self.search_entry = tk.Entry(search_frame, font=FONT,
                                      bg=BG3, fg=FG,
@@ -188,6 +189,16 @@ class DocPilotApp(tk.Tk):
         self.bind('<Control-l>',              lambda e: self._clear_search())
         self.bind('<Escape>',                 lambda e: self.iconify())
 
+    def _on_lang_change(self, _event=None):
+        if self.lang_var.get() == 'ask':
+            self.statusbar.configure(
+                text="  Describe what you want to build, then press Enter  |  Ctrl+L to clear"
+            )
+        else:
+            self.statusbar.configure(
+                text="  Enter to search  |  Ctrl+L to clear  |  Esc to minimise"
+            )
+
     def _toggle_pin(self):
         self.attributes('-topmost', self.pin_var.get())
 
@@ -215,14 +226,20 @@ class DocPilotApp(tk.Tk):
         self._set_text("  fetching docs...")
 
         def worker():
+            # ask mode calls a local LLM which can take much longer
+            timeout = 120 if lang == 'ask' else 20
             try:
+                # 'ask' query may be multiple words -- pass as a single argument list
+                cmd = [sys.executable, DOCPILOT, lang] + (
+                    query.split() if lang == 'ask' else [query]
+                )
                 result = subprocess.run(
-                    [sys.executable, DOCPILOT, lang, query],
+                    cmd,
                     capture_output=True,
                     text=True,
                     encoding='utf-8',
                     errors='replace',
-                    timeout=15
+                    timeout=timeout,
                 )
                 raw = result.stdout or result.stderr or "no output returned"
                 text = strip_ansi(raw)
@@ -323,6 +340,12 @@ WELCOME = """
                 e.g.  vector  |  sort  |  unique_ptr  |  map
 
     search  --  search across all three at once
+
+    ask     --  AI tech-stack advisor  (needs Ollama running)
+                describe what you want to build:
+                e.g.  a REST API with auth and a database
+                      a web scraper that stores results in SQL
+                      a real-time chat app with websockets
 
   Keyboard shortcuts:
     Enter      run search
