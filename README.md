@@ -1,5 +1,10 @@
 # DocPilot
 
+> **[System Design](./systemdesign.md)** - Architecture, data flow, and how it works end-to-end
+
+---
+
+
 Instant terminal documentation for Python libraries, Linux commands, and C++ STL — while you code.
 
 ## What it does
