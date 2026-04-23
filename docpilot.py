@@ -863,18 +863,72 @@ def _pydoc(mod: str) -> Optional[str]:
         pass
     return None
 
-def _print_python_quickstart(name: str):
+_PY_HINTS = ('import ', 'from ', 'def ', 'class ', 'print(', 'return ',
+             'if __name__', '>>>', ' = ', '.append(', '.get(', 'async ')
+
+
+def _looks_like_python(code: str) -> bool:
+    return any(h in code for h in _PY_HINTS)
+
+
+def _extract_code_blocks(desc: str) -> list:
+    """Pull Python code examples out of a markdown or RST description."""
+    blocks: list = []
+
+    # 1. Fenced blocks explicitly tagged as python / py / pycon / python3
+    for m in re.finditer(
+        r'```[ \t]*(?:python3?|py|pycon|py3)\n(.*?)```',
+        desc, re.DOTALL | re.IGNORECASE
+    ):
+        code = m.group(1).strip()
+        if len(code) > 20:
+            blocks.append(code)
+        if len(blocks) >= 3:
+            break
+
+    if blocks:
+        return blocks
+
+    # 2. Untagged fenced blocks that look like Python code
+    for m in re.finditer(r'```\n(.*?)```', desc, re.DOTALL):
+        code = m.group(1).strip()
+        if len(code) > 20 and _looks_like_python(code):
+            blocks.append(code)
+        if len(blocks) >= 3:
+            break
+
+    if blocks:
+        return blocks
+
+    # 3. RST  .. code-block:: python  or bare ::
+    for m in re.finditer(
+        r'(?:code-block::\s*python|::)\s*\n\n((?:[ \t]+.+\n?)+)',
+        desc, re.IGNORECASE
+    ):
+        lines  = m.group(1).splitlines()
+        indent = min((len(l) - len(l.lstrip()) for l in lines if l.strip()), default=0)
+        code   = "\n".join(l[indent:] for l in lines).strip()
+        if len(code) > 20 and _looks_like_python(code):
+            blocks.append(code)
+        if len(blocks) >= 3:
+            break
+
+    return blocks
+
+
+def _print_python_quickstart(name: str, desc: str = ""):
     """Print import line + usage examples. Always runs first."""
     key = name.lower()
     qs  = _PYTHON_QUICKSTART.get(key)
 
     if qs:
-        imp_line = qs["import"]
-        examples = qs["examples"]
+        imp_line     = qs["import"]
+        dict_examples = qs["examples"]
+        raw_blocks   = []
     else:
-        # Auto-generate a best-guess import for anything not in the dict
-        imp_line = f"import {key}"
-        examples = []
+        imp_line     = f"import {key}"
+        dict_examples = []
+        raw_blocks   = _extract_code_blocks(desc) if desc else []
 
     console.print(f"\n[bold yellow]Import:[/bold yellow]")
     if RICH:
@@ -883,14 +937,38 @@ def _print_python_quickstart(name: str):
         for ln in imp_line.splitlines():
             console.print(f"  {ln}")
 
-    if examples:
+    if dict_examples:
         console.print(f"\n[bold yellow]Quick start:[/bold yellow]")
-        block = "\n".join(examples)
+        block = "\n".join(dict_examples)
         if RICH:
             console.print(Syntax(block, "python", theme="monokai"))
         else:
-            for ln in examples:
+            for ln in dict_examples:
                 console.print(f"  {ln}" if ln else "")
+
+    elif raw_blocks:
+        console.print(f"\n[bold yellow]Examples from README:[/bold yellow]")
+        for i, block in enumerate(raw_blocks):
+            # strip >>> / ... prompts so the block is copy-paste ready
+            clean_lines = []
+            for ln in block.splitlines():
+                s = ln.lstrip()
+                if s.startswith('>>> '):
+                    clean_lines.append(ln.replace('>>> ', '', 1))
+                elif s.startswith('... '):
+                    clean_lines.append(ln.replace('... ', '', 1))
+                elif s == '>>>' or s == '...':
+                    clean_lines.append('')
+                else:
+                    clean_lines.append(ln)
+            clean = "\n".join(clean_lines).strip()
+            if RICH:
+                console.print(Syntax(clean, "python", theme="monokai"))
+            else:
+                for ln in clean.splitlines():
+                    console.print(f"  {ln}")
+            if i < len(raw_blocks) - 1:
+                console.print()     # blank line between blocks
 
 
 def show_python(pkg: str):
@@ -909,7 +987,7 @@ def show_python(pkg: str):
         req_py = info.get("requires_python") or ""
 
         # -- always show import + examples first --
-        _print_python_quickstart(name)
+        _print_python_quickstart(name, desc=desc)
 
         if RICH:
             console.print(Panel(
