@@ -1989,6 +1989,678 @@ No marketing language. Be direct. Output plain text + code blocks only."""
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  SQL  (built-in reference + examples)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# (category, one-line description)
+_SQL_INDEX: dict = {
+    # DDL
+    "create_table": ("ddl",        "Define a new table with columns, types, and constraints"),
+    "alter_table":  ("ddl",        "Add, rename, or drop columns; change constraints"),
+    "drop_table":   ("ddl",        "Delete a table and all its rows permanently"),
+    "truncate":     ("ddl",        "Delete all rows fast (no WHERE, no rollback in most DBs)"),
+    "create_index": ("ddl",        "Create an index to speed up SELECTs on a column"),
+    "create_view":  ("ddl",        "Save a SELECT as a named virtual table"),
+    # DML
+    "select":   ("dml", "Retrieve rows from one or more tables"),
+    "insert":   ("dml", "Add new rows to a table"),
+    "update":   ("dml", "Modify existing rows"),
+    "delete":   ("dml", "Remove rows matching a condition"),
+    # Clauses
+    "where":    ("clause", "Filter rows before aggregation"),
+    "order_by": ("clause", "Sort results ASC or DESC by one or more columns"),
+    "group_by": ("clause", "Collapse rows into groups for aggregate functions"),
+    "having":   ("clause", "Filter groups after GROUP BY -- like WHERE for aggregates"),
+    "limit":    ("clause", "Cap the number of rows returned (LIMIT n OFFSET m)"),
+    "distinct": ("clause", "Return only unique rows or distinct values"),
+    "case":     ("clause", "Conditional expression: WHEN ... THEN ... ELSE ... END"),
+    "like":     ("clause", "Pattern match: % = any chars, _ = exactly one char"),
+    "in":       ("clause", "Check if a value is in a list or a subquery result"),
+    "between":  ("clause", "Inclusive range check: value BETWEEN low AND high"),
+    "exists":   ("clause", "True if a correlated subquery returns at least one row"),
+    # Joins
+    "inner_join": ("join", "Rows with a matching key in BOTH tables"),
+    "left_join":  ("join", "All rows from left table + matched rows from right (NULL if no match)"),
+    "right_join": ("join", "All rows from right table + matched rows from left"),
+    "full_join":  ("join", "All rows from both tables; NULLs where no match"),
+    "cross_join": ("join", "Cartesian product -- every row paired with every other row"),
+    "self_join":  ("join", "Join a table with itself using aliases"),
+    # Subquery / CTE
+    "subquery": ("advanced", "Nested SELECT used inside WHERE, FROM, or SELECT"),
+    "cte":      ("advanced", "Common Table Expression -- WITH clause for readable nested queries"),
+    # Aggregates
+    "count":    ("aggregate", "Count rows (COUNT(*)) or non-NULL values (COUNT(col))"),
+    "sum":      ("aggregate", "Sum of numeric values"),
+    "avg":      ("aggregate", "Average (mean) of numeric values"),
+    "min":      ("aggregate", "Smallest value in the group"),
+    "max":      ("aggregate", "Largest value in the group"),
+    "coalesce": ("aggregate", "Return first non-NULL from a list of expressions"),
+    # Window functions
+    "row_number":  ("window", "Sequential number per row within a partition -- no ties"),
+    "rank":        ("window", "Rank with gaps: tied rows share rank, next rank skips"),
+    "dense_rank":  ("window", "Rank without gaps: tied rows share rank, next is +1"),
+    "lag":         ("window", "Value from the previous row in the ordered partition"),
+    "lead":        ("window", "Value from the next row in the ordered partition"),
+    "over":        ("window", "Define the window for a window function (PARTITION BY + ORDER BY)"),
+    # String
+    "upper":     ("string", "Convert to uppercase"),
+    "lower":     ("string", "Convert to lowercase"),
+    "trim":      ("string", "Remove leading/trailing whitespace"),
+    "length":    ("string", "Number of characters (LEN in SQL Server)"),
+    "concat":    ("string", "Join strings (|| in PostgreSQL/SQLite)"),
+    "substring": ("string", "Extract part of a string (SUBSTR in SQLite)"),
+    "replace":   ("string", "Replace every occurrence of a substring"),
+    "cast":      ("string", "Convert a value to a different data type"),
+    # Date/time
+    "now":      ("date", "Current date+time: NOW() / CURRENT_TIMESTAMP"),
+    "date":     ("date", "Extract the date portion from a datetime value"),
+    "extract":  ("date", "Pull year, month, day, hour, etc. from a date"),
+    "date_add": ("date", "Add an interval to a date (DATE_ADD / + INTERVAL)"),
+    "datediff": ("date", "Number of days between two dates"),
+    # Transactions
+    "transaction": ("transaction", "Atomic unit: BEGIN ... COMMIT / ROLLBACK"),
+    # Constraints
+    "primary_key": ("constraint", "Uniquely identifies each row; auto-indexed"),
+    "foreign_key": ("constraint", "Enforce referential integrity between tables"),
+    "unique":      ("constraint", "Prevent duplicate values in a column"),
+    "check":       ("constraint", "Validate a column value with a boolean expression"),
+    "default":     ("constraint", "Value used when INSERT omits the column"),
+    "not_null":    ("constraint", "Reject NULL values in a column"),
+    "index":       ("constraint", "Speed up reads at the cost of slower writes"),
+}
+
+_SQL_EXAMPLES: dict = {
+"create_table": """\
+CREATE TABLE users (
+    id         INT           PRIMARY KEY AUTO_INCREMENT,
+    name       VARCHAR(100)  NOT NULL,
+    email      VARCHAR(150)  UNIQUE,
+    age        INT           CHECK (age >= 0),
+    city       VARCHAR(50)   DEFAULT 'Unknown',
+    created_at TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
+);
+
+-- With a foreign key
+CREATE TABLE orders (
+    id         INT            PRIMARY KEY AUTO_INCREMENT,
+    user_id    INT            NOT NULL,
+    product    VARCHAR(100),
+    amount     DECIMAL(10,2),
+    status     VARCHAR(20)    DEFAULT 'pending',
+    created_at TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+""",
+"alter_table": """\
+ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+ALTER TABLE users DROP COLUMN phone;
+
+-- Rename (MySQL 8+ / PostgreSQL)
+ALTER TABLE users RENAME COLUMN city TO location;
+
+-- Change type
+ALTER TABLE users MODIFY COLUMN age SMALLINT;        -- MySQL
+ALTER TABLE users ALTER COLUMN age TYPE SMALLINT;    -- PostgreSQL
+
+-- Add constraint
+ALTER TABLE users ADD CONSTRAINT chk_age CHECK (age >= 0);
+
+-- Add foreign key
+ALTER TABLE orders
+  ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id);
+""",
+"select": """\
+SELECT * FROM users;
+
+SELECT name, email, age AS user_age FROM users;
+
+-- Filter + sort + limit
+SELECT name, city
+FROM users
+WHERE age > 25
+ORDER BY name ASC
+LIMIT 10;
+
+-- Computed column
+SELECT name, amount * 1.1 AS amount_with_tax FROM orders;
+
+-- Distinct values
+SELECT DISTINCT city FROM users;
+
+-- Count total rows
+SELECT COUNT(*) AS total FROM users;
+""",
+"insert": """\
+-- Single row
+INSERT INTO users (name, email, age, city)
+VALUES ('Alice', 'alice@example.com', 30, 'New York');
+
+-- Multiple rows
+INSERT INTO users (name, email, age, city) VALUES
+    ('Bob',   'bob@example.com',   25, 'London'),
+    ('Carol', 'carol@example.com', 35, 'Paris');
+
+-- From a SELECT
+INSERT INTO archive_users (name, email)
+SELECT name, email FROM users WHERE created_at < '2023-01-01';
+
+-- Upsert (PostgreSQL)
+INSERT INTO users (id, name, email)
+VALUES (1, 'Alice', 'alice@new.com')
+ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
+
+-- Ignore duplicates (MySQL / SQLite)
+INSERT IGNORE INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+""",
+"update": """\
+UPDATE users SET city = 'Chicago' WHERE id = 1;
+
+-- Multiple columns
+UPDATE users
+SET city = 'Chicago', age = 31
+WHERE email = 'alice@example.com';
+
+-- From calculation
+UPDATE orders SET amount = amount * 0.9 WHERE status = 'pending';
+
+-- With subquery
+UPDATE users
+SET city = 'VIP City'
+WHERE id IN (SELECT user_id FROM orders WHERE amount > 1000);
+
+-- With JOIN (MySQL)
+UPDATE orders o
+JOIN users u ON o.user_id = u.id
+SET o.status = 'vip'
+WHERE u.city = 'New York';
+""",
+"delete": """\
+DELETE FROM users WHERE id = 5;
+
+DELETE FROM orders
+WHERE status = 'cancelled' AND created_at < '2023-01-01';
+
+-- Remove users with no orders
+DELETE FROM users
+WHERE id NOT IN (SELECT user_id FROM orders);
+
+-- Remove all rows (keep table structure)
+DELETE FROM users;
+TRUNCATE TABLE users;  -- faster, but can't roll back in MySQL
+""",
+"where": """\
+SELECT * FROM users WHERE age > 25;
+SELECT * FROM users WHERE age BETWEEN 20 AND 35;
+SELECT * FROM users WHERE city IN ('New York', 'London', 'Paris');
+SELECT * FROM users WHERE email LIKE '%@gmail.com';
+SELECT * FROM users WHERE city IS NULL;
+SELECT * FROM users WHERE city IS NOT NULL;
+
+-- Combined conditions
+SELECT * FROM users WHERE age > 25 AND city = 'New York';
+SELECT * FROM users WHERE city = 'London' OR city = 'Paris';
+SELECT * FROM users WHERE NOT (age < 18);
+
+-- Subquery in WHERE
+SELECT * FROM users
+WHERE id IN (SELECT user_id FROM orders WHERE amount > 500);
+""",
+"order_by": """\
+SELECT * FROM users ORDER BY name;
+SELECT * FROM users ORDER BY name ASC;
+SELECT * FROM users ORDER BY created_at DESC;
+
+-- Multiple columns
+SELECT * FROM users ORDER BY city ASC, age DESC;
+
+-- NULLs last (PostgreSQL)
+SELECT * FROM users ORDER BY city NULLS LAST;
+""",
+"group_by": """\
+-- Count per group
+SELECT city, COUNT(*) AS user_count
+FROM users
+GROUP BY city;
+
+-- Multiple aggregates
+SELECT city,
+       COUNT(*)   AS total,
+       AVG(age)   AS avg_age,
+       MAX(age)   AS oldest
+FROM users
+GROUP BY city;
+
+-- Group + filter groups
+SELECT city, COUNT(*) AS cnt
+FROM users
+GROUP BY city
+HAVING COUNT(*) > 5
+ORDER BY cnt DESC;
+
+-- Group with JOIN
+SELECT u.city, SUM(o.amount) AS total_sales
+FROM orders o
+JOIN users u ON o.user_id = u.id
+GROUP BY u.city
+ORDER BY total_sales DESC;
+""",
+"having": """\
+-- HAVING filters AFTER grouping; WHERE filters BEFORE
+SELECT status, SUM(amount) AS revenue
+FROM orders
+GROUP BY status
+HAVING SUM(amount) > 1000
+   AND COUNT(*) > 5;
+
+-- Common mistake:
+-- WHERE SUM(amount) > 1000   -- ERROR: aggregates not allowed in WHERE
+-- HAVING SUM(amount) > 1000  -- CORRECT
+""",
+"limit": """\
+SELECT * FROM users ORDER BY created_at DESC LIMIT 10;
+
+-- Pagination: page 3 with 20 rows per page
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40;
+
+-- SQL Server
+SELECT TOP 10 * FROM users ORDER BY created_at DESC;
+
+-- Oracle
+SELECT * FROM users ORDER BY created_at DESC FETCH FIRST 10 ROWS ONLY;
+""",
+"distinct": """\
+SELECT DISTINCT city FROM users;
+
+-- Distinct combination of columns
+SELECT DISTINCT city, age FROM users;
+
+-- Count unique values
+SELECT COUNT(DISTINCT city) AS unique_cities FROM users;
+
+-- DISTINCT ON: first row per group (PostgreSQL)
+SELECT DISTINCT ON (city) city, name, age
+FROM users
+ORDER BY city, age DESC;  -- gets oldest person per city
+""",
+"case": """\
+-- Searched CASE
+SELECT name, age,
+       CASE
+           WHEN age < 18 THEN 'Minor'
+           WHEN age < 65 THEN 'Adult'
+           ELSE 'Senior'
+       END AS age_group
+FROM users;
+
+-- Simple CASE
+SELECT name,
+       CASE status
+           WHEN 'active'   THEN 'Active'
+           WHEN 'inactive' THEN 'Inactive'
+           ELSE 'Unknown'
+       END AS label
+FROM users;
+
+-- CASE inside aggregate
+SELECT
+    COUNT(CASE WHEN status = 'completed' THEN 1 END) AS done,
+    COUNT(CASE WHEN status = 'pending'   THEN 1 END) AS pending
+FROM orders;
+""",
+"like": """\
+SELECT * FROM users WHERE name LIKE 'A%';        -- starts with A
+SELECT * FROM users WHERE name LIKE '%son';       -- ends with son
+SELECT * FROM users WHERE name LIKE '%ali%';      -- contains ali
+SELECT * FROM users WHERE name LIKE 'A_i_e';      -- A?i?e pattern
+
+-- Case insensitive (PostgreSQL)
+SELECT * FROM users WHERE name ILIKE '%alice%';
+
+-- Escape a literal %
+SELECT * FROM products WHERE code LIKE '50!%%' ESCAPE '!';
+""",
+"in": """\
+SELECT * FROM users WHERE city IN ('London', 'Paris', 'Berlin');
+SELECT * FROM users WHERE city NOT IN ('London', 'Paris');
+
+-- IN with subquery
+SELECT * FROM users
+WHERE id IN (SELECT user_id FROM orders WHERE amount > 1000);
+
+-- EXISTS is usually faster than IN for large subqueries
+SELECT * FROM users u
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id AND o.amount > 1000);
+""",
+"inner_join": """\
+SELECT u.name, o.product, o.amount
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+
+-- Multiple joins
+SELECT u.name, o.product, c.name AS category
+FROM users u
+JOIN orders     o ON u.id     = o.user_id
+JOIN categories c ON o.cat_id = c.id;
+
+-- Aggregate across joined tables
+SELECT u.name, SUM(o.amount) AS total_spent
+FROM users u
+JOIN orders o ON u.id = o.user_id
+WHERE o.status = 'completed'
+GROUP BY u.id, u.name
+ORDER BY total_spent DESC;
+""",
+"left_join": """\
+-- All users, including those with no orders
+SELECT u.name, o.product, o.amount
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id;
+
+-- Find users with NO orders
+SELECT u.name
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE o.id IS NULL;
+
+-- Count orders per user (zero for users with none)
+SELECT u.name, COUNT(o.id) AS order_count
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.name
+ORDER BY order_count DESC;
+""",
+"subquery": """\
+-- In WHERE
+SELECT name FROM users
+WHERE id IN (SELECT user_id FROM orders WHERE amount > 500);
+
+-- Correlated subquery
+SELECT name, age
+FROM users u
+WHERE age > (SELECT AVG(age) FROM users);
+
+-- In FROM (derived table)
+SELECT city, avg_age
+FROM (
+    SELECT city, AVG(age) AS avg_age
+    FROM users
+    GROUP BY city
+) city_stats
+WHERE avg_age > 30;
+
+-- In SELECT
+SELECT name,
+    (SELECT COUNT(*) FROM orders WHERE user_id = u.id) AS order_count
+FROM users u;
+""",
+"cte": """\
+-- Basic CTE
+WITH high_spenders AS (
+    SELECT user_id, SUM(amount) AS total
+    FROM orders
+    GROUP BY user_id
+    HAVING SUM(amount) > 1000
+)
+SELECT u.name, hs.total
+FROM users u
+JOIN high_spenders hs ON u.id = hs.user_id;
+
+-- Multiple CTEs
+WITH
+monthly AS (
+    SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, SUM(amount) AS revenue
+    FROM orders GROUP BY month
+),
+avg_rev AS (SELECT AVG(revenue) AS avg FROM monthly)
+SELECT month, revenue, revenue - avg AS diff
+FROM monthly, avg_rev ORDER BY month;
+
+-- Recursive CTE (org chart / tree)
+WITH RECURSIVE subordinates AS (
+    SELECT id, name, manager_id FROM employees WHERE id = 1
+    UNION ALL
+    SELECT e.id, e.name, e.manager_id
+    FROM employees e
+    JOIN subordinates s ON e.manager_id = s.id
+)
+SELECT * FROM subordinates;
+""",
+"row_number": """\
+SELECT name, city, age,
+       ROW_NUMBER() OVER (PARTITION BY city ORDER BY age DESC) AS rn
+FROM users;
+
+-- Get the youngest person per city
+SELECT name, city, age FROM (
+    SELECT name, city, age,
+           ROW_NUMBER() OVER (PARTITION BY city ORDER BY age ASC) AS rn
+    FROM users
+) t WHERE rn = 1;
+""",
+"rank": """\
+-- RANK: gaps after ties (1, 1, 3)
+SELECT name, amount,
+       RANK() OVER (ORDER BY amount DESC) AS rnk
+FROM orders;
+
+-- DENSE_RANK: no gaps (1, 1, 2)
+SELECT name, amount,
+       DENSE_RANK() OVER (ORDER BY amount DESC) AS drnk
+FROM orders;
+
+-- Per partition
+SELECT user_id, product, amount,
+       RANK() OVER (PARTITION BY user_id ORDER BY amount DESC) AS rnk
+FROM orders;
+""",
+"lag": """\
+-- Previous row's value
+SELECT created_at, amount,
+       LAG(amount) OVER (ORDER BY created_at) AS prev,
+       amount - LAG(amount) OVER (ORDER BY created_at) AS change
+FROM orders;
+
+-- LEAD: next row's value
+SELECT created_at, amount,
+       LEAD(amount) OVER (ORDER BY created_at) AS next_val
+FROM orders;
+
+-- Default when no previous row
+SELECT created_at, amount,
+       LAG(amount, 1, 0) OVER (ORDER BY created_at) AS prev
+FROM orders;  -- 0 for the first row
+""",
+"transaction": """\
+BEGIN;
+    UPDATE accounts SET balance = balance - 200 WHERE id = 1;
+    UPDATE accounts SET balance = balance + 200 WHERE id = 2;
+COMMIT;
+
+-- Rollback on error
+BEGIN;
+    DELETE FROM orders WHERE user_id = 99;
+ROLLBACK;
+
+-- Savepoints (partial rollback)
+BEGIN;
+    INSERT INTO users (name) VALUES ('Alice');
+    SAVEPOINT sp1;
+    INSERT INTO users (name) VALUES ('Bob');
+    ROLLBACK TO sp1;   -- undo Bob, keep Alice
+COMMIT;
+""",
+"create_index": """\
+CREATE INDEX idx_users_city  ON users (city);
+CREATE UNIQUE INDEX idx_users_email ON users (email);
+
+-- Composite (useful for WHERE a = ? AND b = ?)
+CREATE INDEX idx_orders_user_status ON orders (user_id, status);
+
+-- Partial index (PostgreSQL)
+CREATE INDEX idx_active ON users (city) WHERE status = 'active';
+
+-- Drop
+DROP INDEX idx_users_city ON users;   -- MySQL
+DROP INDEX idx_users_city;            -- PostgreSQL
+
+-- Check if index is used
+EXPLAIN SELECT * FROM users WHERE city = 'London';
+""",
+"count": """\
+SELECT COUNT(*)             AS total_rows  FROM orders;
+SELECT COUNT(amount)        AS non_null    FROM orders;  -- skips NULLs
+SELECT COUNT(DISTINCT city) AS unique_cities FROM users;
+
+-- Per group
+SELECT status, COUNT(*) AS cnt FROM orders GROUP BY status;
+
+-- Conditional counts
+SELECT
+    COUNT(CASE WHEN status = 'completed' THEN 1 END) AS done,
+    COUNT(CASE WHEN status = 'pending'   THEN 1 END) AS pending
+FROM orders;
+""",
+"coalesce": """\
+SELECT name, COALESCE(phone, email, 'no contact') AS contact FROM users;
+SELECT name, COALESCE(discount, 0) AS discount FROM products;
+
+-- Handle NULLs in LEFT JOIN totals
+SELECT u.name, COALESCE(SUM(o.amount), 0) AS total
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.name;
+""",
+"cast": """\
+SELECT CAST(age AS VARCHAR(10)) FROM users;
+SELECT CAST('2024-01-15' AS DATE);
+SELECT CAST(amount AS INT) FROM orders;
+
+-- PostgreSQL shorthand
+SELECT age::TEXT FROM users;
+SELECT '42'::INT;
+SELECT '2024-01-15'::DATE;
+
+-- MySQL CONVERT
+SELECT CONVERT(age, CHAR) FROM users;
+""",
+"now": """\
+SELECT NOW();               -- current date+time
+SELECT CURRENT_TIMESTAMP;   -- same, standard SQL
+SELECT CURRENT_DATE;        -- date only
+SELECT CURRENT_TIME;        -- time only
+
+-- Last 7 days (MySQL)
+SELECT * FROM orders WHERE created_at >= NOW() - INTERVAL 7 DAY;
+-- Last 7 days (PostgreSQL)
+SELECT * FROM orders WHERE created_at >= NOW() - INTERVAL '7 days';
+
+-- Format (MySQL)
+SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS day FROM orders;
+-- Format (PostgreSQL)
+SELECT TO_CHAR(created_at, 'YYYY-MM-DD') FROM orders;
+""",
+"extract": """\
+SELECT EXTRACT(YEAR  FROM created_at) AS yr  FROM orders;
+SELECT EXTRACT(MONTH FROM created_at) AS mo  FROM orders;
+SELECT EXTRACT(DAY   FROM created_at) AS day FROM orders;
+
+-- MySQL shorthand
+SELECT YEAR(created_at), MONTH(created_at), DAY(created_at) FROM orders;
+
+-- PostgreSQL
+SELECT DATE_PART('hour', created_at) FROM orders;
+SELECT DATE_TRUNC('month', created_at) FROM orders;  -- first of the month
+
+-- Group by month
+SELECT EXTRACT(YEAR  FROM created_at) AS yr,
+       EXTRACT(MONTH FROM created_at) AS mo,
+       SUM(amount) AS revenue
+FROM orders
+GROUP BY yr, mo ORDER BY yr, mo;
+""",
+"create_view": """\
+-- Create a view
+CREATE VIEW active_users AS
+SELECT id, name, email, city
+FROM users
+WHERE status = 'active';
+
+-- Use like a table
+SELECT * FROM active_users WHERE city = 'London';
+
+-- Replace an existing view
+CREATE OR REPLACE VIEW active_users AS
+SELECT id, name, email FROM users WHERE status = 'active';
+
+-- Drop a view
+DROP VIEW IF EXISTS active_users;
+
+-- Materialized view (PostgreSQL -- cached on disk)
+CREATE MATERIALIZED VIEW monthly_sales AS
+SELECT DATE_TRUNC('month', created_at) AS month, SUM(amount) AS revenue
+FROM orders GROUP BY month;
+REFRESH MATERIALIZED VIEW monthly_sales;
+""",
+}
+
+
+def show_sql(topic: str):
+    key = topic.lower().replace(' ', '_').replace('-', '_')
+    console.print(f"\n[bold cyan]SQL docs ->[/bold cyan] [bold white]{topic}[/bold white]\n")
+
+    if key in _SQL_INDEX:
+        cat, desc = _SQL_INDEX[key]
+        label = key.replace('_', ' ').upper()
+
+        if RICH:
+            console.print(Panel(
+                f"[bold white]{label}[/bold white]\n\n{desc}",
+                title="[bold yellow]SQL Reference[/bold yellow]", border_style="yellow"
+            ))
+        else:
+            console.print(f"=== {label} ===\n{desc}")
+
+        if key in _SQL_EXAMPLES:
+            console.print(f"\n[bold yellow]Examples:[/bold yellow]")
+            if RICH:
+                console.print(Syntax(_SQL_EXAMPLES[key].strip(), "sql",
+                                     theme="monokai", line_numbers=True))
+            else:
+                console.print(_SQL_EXAMPLES[key])
+
+        console.print(f"\n[bold yellow]Reference:[/bold yellow]")
+        console.print(f"  https://www.w3schools.com/sql/")
+        console.print(f"  https://www.postgresql.org/docs/current/sql-commands.html")
+    else:
+        console.print(f"[yellow]'{topic}' not in built-in index.[/yellow]")
+        suggestions = [k for k in _SQL_INDEX if topic.lower() in k or k in topic.lower()]
+        if suggestions:
+            console.print(f"  Did you mean: {', '.join(suggestions[:6])}")
+        console.print(f"\n  https://www.w3schools.com/sql/sql_ref_keywords.asp")
+
+
+def show_list_sql(filter_cat: Optional[str] = None):
+    cats: dict = {}
+    for name, (cat, desc) in sorted(_SQL_INDEX.items()):
+        if filter_cat and filter_cat.lower() not in cat.lower():
+            continue
+        cats.setdefault(cat, []).append((name, desc))
+
+    for cat, items in sorted(cats.items()):
+        if RICH:
+            t = Table(title=f"SQL | {cat}", box=box.SIMPLE, header_style="bold cyan")
+            t.add_column("Topic",   style="white bold")
+            t.add_column("Summary", style="dim")
+            for name, desc in items:
+                t.add_row(name, desc)
+            console.print(t)
+        else:
+            console.print(f"\n=== {cat} ===")
+            for name, desc in items:
+                console.print(f"  {name:<20} {desc}")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  LIST command  -- show all built-in C++ topics
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -2055,6 +2727,13 @@ Examples
     ls.add_argument("category", nargs="?",
                     help="Optional filter: container, algorithm, memory, thread …")
 
+    sq  = sub.add_parser("sql",     aliases=["sq"],          help="SQL reference + examples")
+    sq.add_argument("name")
+
+    lsq = sub.add_parser("listsql",                          help="List all built-in SQL topics")
+    lsq.add_argument("category", nargs="?",
+                     help="Optional filter: ddl, dml, clause, join, aggregate, window, string, date …")
+
     ak  = sub.add_parser("ask",     aliases=["a"],           help="AI tech-stack advisor (needs Ollama)")
     ak.add_argument("question", nargs="+",
                     help="Describe what you want to build, e.g. 'a REST API with auth and database'")
@@ -2067,6 +2746,10 @@ Examples
         show_linux(args.name)
     elif args.cmd in ("cpp", "c++", "cxx"):
         show_cpp(args.name)
+    elif args.cmd in ("sql", "sq"):
+        show_sql(args.name)
+    elif args.cmd == "listsql":
+        show_list_sql(args.category)
     elif args.cmd in ("search", "s", "find"):
         show_search(args.term)
     elif args.cmd == "list":
@@ -2137,6 +2820,13 @@ def _repl():
                 console.print("[red]Usage:  search <term>[/red]")
         elif cmd == "list":
             show_list(rest or None)
+        elif cmd in ("sql", "sq"):
+            if rest:
+                show_sql(rest)
+            else:
+                console.print("[red]Usage:  sql <topic>  e.g.  sql select  |  sql cte  |  sql window[/red]")
+        elif cmd == "listsql":
+            show_list_sql(rest or None)
         elif cmd in ("ask", "a"):
             if rest:
                 show_ask(rest)
@@ -2145,8 +2835,9 @@ def _repl():
         elif cmd in ("help", "h", "?"):
             console.print(
                 "[cyan]python[/cyan] <pkg>  |  [cyan]linux[/cyan] <cmd>  |  "
-                "[cyan]cpp[/cyan] <topic>  |  [cyan]search[/cyan] <term>  |  "
-                "[cyan]ask[/cyan] <what to build>  |  [cyan]list[/cyan]  |  [cyan]q[/cyan]"
+                "[cyan]cpp[/cyan] <topic>  |  [cyan]sql[/cyan] <topic>  |  "
+                "[cyan]search[/cyan] <term>  |  [cyan]ask[/cyan] <what to build>  |  "
+                "[cyan]list[/cyan]  |  [cyan]listsql[/cyan]  |  [cyan]q[/cyan]"
             )
         else:
             # try auto-detect: single word -> search all

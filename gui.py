@@ -100,7 +100,7 @@ class DocPilotApp(tk.Tk):
 
         self.lang_var = tk.StringVar(value='python')
         lang_drop = ttk.Combobox(search_frame, textvariable=self.lang_var,
-                                 values=['python', 'linux', 'cpp', 'search', 'ask'],
+                                 values=['python', 'linux', 'cpp', 'sql', 'search', 'ask'],
                                  state='readonly', width=9, font=FONT)
         lang_drop.pack(side='left', padx=(0, 8))
         lang_drop.bind('<<ComboboxSelected>>', self._on_lang_change)
@@ -133,8 +133,11 @@ class DocPilotApp(tk.Tk):
             ('grep',       'linux',  'grep'),
             ('curl',       'linux',  'curl'),
             ('vector',     'cpp',    'vector'),
-            ('sort',       'cpp',    'sort'),
             ('unique_ptr', 'cpp',    'unique_ptr'),
+            ('select',     'sql',    'select'),
+            ('join',       'sql',    'inner_join'),
+            ('cte',        'sql',    'cte'),
+            ('window',     'sql',    'row_number'),
         ]
         for label, lang, query in examples:
             b = tk.Button(pills, text=label, font=('Consolas', 9),
@@ -417,6 +420,10 @@ WELCOME = """
 
     cpp     --  C++ STL classes and algorithms
                 e.g.  vector  |  sort  |  unique_ptr  |  map
+
+    sql     --  SQL reference with copy-paste examples
+                e.g.  select  |  inner_join  |  cte  |  row_number
+                      group_by  |  having  |  transaction  |  create_index
 
     search  --  search across all three at once
 
