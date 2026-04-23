@@ -14,6 +14,22 @@ Instant terminal documentation for Python libraries, Linux commands, and C++ STL
 - **C++** — built-in STL reference with include header and a ready-to-copy code example (no internet needed)
 - **Search** — searches all three at once and shows a summary table
 
+## GUI window (use alongside VS Code or Jupyter)
+
+Double-click **`launch.bat`** to open a floating documentation window that stays on top of your editor.
+
+![DocPilot GUI](https://img.shields.io/badge/GUI-VS%20Code%20dark%20theme-007acc)
+
+- Pick a language from the dropdown, type what you want, press **Enter**
+- Window floats over VS Code / Jupyter by default (click **📌 pin** to toggle)
+- Click the quick buttons to try examples instantly
+- **Ctrl+L** clears the search bar, **Esc** minimises
+
+```bash
+# or launch from the terminal (no console window)
+pythonw gui.py
+```
+
 ## Install
 
 ```bash
