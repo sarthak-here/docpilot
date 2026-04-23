@@ -1944,6 +1944,87 @@ def show_search(term: str):
 #  ASK  (AI tech-stack advisor)
 # ══════════════════════════════════════════════════════════════════════════════
 
+def show_explain(lang: str, query: str):
+    """AI deep-dive on any topic in any language."""
+    ok, model = _ollama_available()
+    if not ok:
+        console.print(f"\n[red]Ollama is not running.[/red]")
+        console.print("  Start it:      ollama serve")
+        console.print("  Install model: ollama pull gemma4")
+        return
+
+    console.print(f"\n[bold cyan]AI explanation[/bold cyan]  "
+                  f"[dim]({model}) -- {lang}: {query}[/dim]\n")
+    console.print(f"[dim]  thinking...[/dim]\n")
+
+    _prompts = {
+        "python": (
+            f"You are a Python expert. Give a deep, practical explanation of '{query}'.\n"
+            f"Structure your answer:\n"
+            f"## What it is\n"
+            f"One paragraph on what it does and when to reach for it.\n\n"
+            f"## Core usage\n"
+            f"The most important functions/classes with a complete working example.\n\n"
+            f"## Real-world patterns\n"
+            f"2-3 patterns senior developers actually use, with code.\n\n"
+            f"## Gotchas\n"
+            f"Common mistakes and how to avoid them.\n"
+            f"Use ```python code blocks. Be concrete, not generic."
+        ),
+        "cpp": (
+            f"You are a C++ expert. Give a deep, practical explanation of std::{query} "
+            f"(or the relevant C++ concept '{query}').\n"
+            f"Structure:\n"
+            f"## What it is\n"
+            f"What problem it solves and when to use it vs alternatives.\n\n"
+            f"## Key operations\n"
+            f"Most-used operations with time/space complexity notes.\n\n"
+            f"## Complete example\n"
+            f"A realistic working program demonstrating it.\n\n"
+            f"## Gotchas\n"
+            f"Memory safety, iterator invalidation, or other pitfalls.\n"
+            f"Use ```cpp code blocks."
+        ),
+        "sql": (
+            f"You are a SQL expert. Give a deep explanation of '{query}' in SQL.\n"
+            f"Structure:\n"
+            f"## When to use it\n"
+            f"Use cases and how it differs from similar constructs.\n\n"
+            f"## Examples\n"
+            f"3-4 realistic examples with a users/orders schema.\n\n"
+            f"## Dialect differences\n"
+            f"Key syntax differences across MySQL, PostgreSQL, SQLite, SQL Server.\n\n"
+            f"## Performance\n"
+            f"Index usage, query plan notes, when to avoid it.\n"
+            f"Use ```sql code blocks."
+        ),
+        "linux": (
+            f"You are a Linux expert. Give a deep explanation of the '{query}' command.\n"
+            f"Structure:\n"
+            f"## What it does\n"
+            f"One clear paragraph.\n\n"
+            f"## Most useful flags\n"
+            f"The 6-8 flags a developer actually uses day to day.\n\n"
+            f"## Real examples\n"
+            f"6 practical examples from a developer's workflow, with brief explanations.\n\n"
+            f"## Pipes and combos\n"
+            f"How to combine with grep, awk, xargs, find, etc.\n"
+            f"Use ```bash code blocks."
+        ),
+    }
+
+    prompt = _prompts.get(lang,
+        f"Give a deep, practical explanation of '{query}' with real-world examples and code. "
+        f"Cover common patterns, gotchas, and best practices."
+    )
+
+    response = _ollama_generate(prompt, model, timeout=90)
+    if not response:
+        console.print("[red]No response from LLM.[/red]")
+        return
+    console.print(response)
+
+
 def show_ask(question: str):
     """Describe what you want to build -- get back a recommended tech stack."""
     ok, model = _ollama_available()
@@ -2734,6 +2815,10 @@ Examples
     lsq.add_argument("category", nargs="?",
                      help="Optional filter: ddl, dml, clause, join, aggregate, window, string, date …")
 
+    ex  = sub.add_parser("explain",  aliases=["e"],          help="AI deep-dive on any topic (needs Ollama)")
+    ex.add_argument("lang",  help="python | cpp | sql | linux")
+    ex.add_argument("query", nargs="+")
+
     ak  = sub.add_parser("ask",     aliases=["a"],           help="AI tech-stack advisor (needs Ollama)")
     ak.add_argument("question", nargs="+",
                     help="Describe what you want to build, e.g. 'a REST API with auth and database'")
@@ -2750,6 +2835,8 @@ Examples
         show_sql(args.name)
     elif args.cmd == "listsql":
         show_list_sql(args.category)
+    elif args.cmd in ("explain", "e"):
+        show_explain(args.lang, " ".join(args.query))
     elif args.cmd in ("search", "s", "find"):
         show_search(args.term)
     elif args.cmd == "list":
@@ -2827,6 +2914,13 @@ def _repl():
                 console.print("[red]Usage:  sql <topic>  e.g.  sql select  |  sql cte  |  sql window[/red]")
         elif cmd == "listsql":
             show_list_sql(rest or None)
+        elif cmd in ("explain", "e"):
+            # explain <lang> <query>
+            parts2 = rest.split(None, 1)
+            if len(parts2) == 2:
+                show_explain(parts2[0], parts2[1])
+            else:
+                console.print("[red]Usage:  explain <lang> <topic>  e.g.  explain python numpy[/red]")
         elif cmd in ("ask", "a"):
             if rest:
                 show_ask(rest)

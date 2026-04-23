@@ -121,6 +121,13 @@ class DocPilotApp(tk.Tk):
                                 command=self._run_search)
         self.go_btn.pack(side='left', padx=(8, 0))
 
+        self.ai_btn = tk.Button(search_frame, text='Ask AI', font=FONT_SM,
+                                bg='#6b3fa0', fg='white', relief='flat',
+                                padx=10, cursor='hand2',
+                                activebackground='#4e2d78',
+                                command=self._run_ai)
+        self.ai_btn.pack(side='left', padx=(4, 0))
+
         # ── quick example buttons ─────────────────────────────────────────────
         pills = tk.Frame(self, bg=BG, padx=14)
         pills.pack(fill='x')
@@ -301,6 +308,7 @@ class DocPilotApp(tk.Tk):
             loading_msg = "  fetching docs..."
         self.statusbar.configure(text=status_msg)
         self.go_btn.configure(state='disabled', text='...')
+        self.ai_btn.configure(state='disabled')
         self._set_text(loading_msg)
 
         def worker():
@@ -339,6 +347,50 @@ class DocPilotApp(tk.Tk):
                      f"|  Enter to search again  |  Ctrl+L to clear"
             ))
             self.after(0, lambda: self.go_btn.configure(state='normal', text='Go'))
+            self.after(0, lambda: self.ai_btn.configure(state='normal'))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _run_ai(self):
+        """Ask AI for a deep explanation of the current language + query."""
+        query = self.search_entry.get().strip()
+        if not query:
+            return
+
+        lang = self.lang_var.get()
+        # 'ask' already IS the AI mode -- reuse _run_search for it
+        if lang == 'ask':
+            self._run_search()
+            return
+
+        self.statusbar.configure(text=f"  asking AI about {lang}: {query} ...")
+        self.go_btn.configure(state='disabled')
+        self.ai_btn.configure(state='disabled', text='...')
+        self._set_text(f"  asking AI for a deep explanation of '{query}'...\n"
+                       f"  (may take 10-30 seconds)")
+
+        def worker():
+            try:
+                cmd = [sys.executable, DOCPILOT, 'explain', lang] + query.split()
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True, text=True,
+                    encoding='utf-8', errors='replace',
+                    timeout=120,
+                )
+                raw  = result.stdout or result.stderr or "no output returned"
+                text = strip_ansi(raw)
+            except subprocess.TimeoutExpired:
+                text = "  timed out -- Ollama may be busy or not running"
+            except Exception as exc:
+                text = f"  error: {exc}"
+
+            self.after(0, lambda: self._set_text(text))
+            self.after(0, lambda: self.statusbar.configure(
+                text=f"  AI done  |  {lang}  {query}  |  Enter to search again"
+            ))
+            self.after(0, lambda: self.go_btn.configure(state='normal'))
+            self.after(0, lambda: self.ai_btn.configure(state='normal', text='Ask AI'))
 
         threading.Thread(target=worker, daemon=True).start()
 
