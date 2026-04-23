@@ -51,6 +51,488 @@ except ImportError:
 #  PYTHON  (PyPI + pydoc stdlib)
 # ══════════════════════════════════════════════════════════════════════════════
 
+# Canonical import line + usage examples for popular packages/modules.
+# Shown at the very top of every result so you can copy-paste immediately.
+_PYTHON_QUICKSTART: dict = {
+    "numpy": {
+        "import": "import numpy as np",
+        "examples": [
+            "arr = np.array([1, 2, 3, 4, 5])",
+            "np.zeros((3, 3))           # 3x3 zero matrix",
+            "np.ones((2, 4))            # 2x4 ones matrix",
+            "np.arange(0, 10, 2)        # [0, 2, 4, 6, 8]",
+            "np.linspace(0, 1, 5)       # 5 evenly spaced values",
+            "arr.shape  arr.dtype  arr.ndim",
+            "arr.reshape(5, 1)          # change shape",
+            "np.dot(a, b)               # matrix multiply",
+            "np.sum(arr)  np.mean(arr)  np.std(arr)",
+            "arr[arr > 2]               # boolean indexing",
+        ],
+    },
+    "pandas": {
+        "import": "import pandas as pd",
+        "examples": [
+            "df = pd.read_csv('file.csv')",
+            "df = pd.DataFrame({'col1': [1, 2], 'col2': [3, 4]})",
+            "df.head()  df.tail()  df.info()  df.describe()",
+            "df['col1']                 # select column -> Series",
+            "df[['col1', 'col2']]       # select multiple columns",
+            "df[df['col1'] > 1]         # filter rows",
+            "df.groupby('col1').sum()",
+            "df.merge(df2, on='id')",
+            "df.to_csv('out.csv', index=False)",
+        ],
+    },
+    "matplotlib": {
+        "import": "import matplotlib.pyplot as plt",
+        "examples": [
+            "plt.plot([1, 2, 3], [4, 5, 6])    # line chart",
+            "plt.scatter(x, y)                  # scatter plot",
+            "plt.bar(['A', 'B', 'C'], [10, 20, 15])",
+            "plt.hist(data, bins=20)",
+            "plt.xlabel('X')  plt.ylabel('Y')  plt.title('Title')",
+            "plt.legend(['series1'])  plt.grid(True)",
+            "plt.savefig('chart.png', dpi=150)",
+            "plt.show()",
+            "fig, axes = plt.subplots(1, 2, figsize=(10, 4))  # subplots",
+        ],
+    },
+    "requests": {
+        "import": "import requests",
+        "examples": [
+            "r = requests.get('https://api.example.com/data')",
+            "r = requests.post('https://api.example.com/', json={'key': 'val'})",
+            "r.status_code              # 200",
+            "r.json()                   # parse JSON response",
+            "r.text                     # raw text",
+            "r.raise_for_status()       # raise exception on 4xx/5xx",
+            "r = requests.get(url, headers={'Authorization': 'Bearer TOKEN'},",
+            "                 params={'q': 'search', 'page': 1})",
+        ],
+    },
+    "os": {
+        "import": "import os",
+        "examples": [
+            "os.getcwd()                # current directory",
+            "os.listdir('.')            # list files in directory",
+            "os.path.join('dir', 'file.txt')",
+            "os.path.exists('/path')    # True/False",
+            "os.path.isfile('f.txt')    # is it a file?",
+            "os.makedirs('a/b/c', exist_ok=True)",
+            "os.remove('file.txt')",
+            "os.rename('old.txt', 'new.txt')",
+            "os.environ.get('HOME', '/tmp')  # env variable",
+        ],
+    },
+    "sys": {
+        "import": "import sys",
+        "examples": [
+            "sys.argv                   # list of command line args",
+            "sys.argv[0]                # script name",
+            "sys.exit(0)                # exit program",
+            "sys.path.append('/mydir')  # add to module search path",
+            "sys.version                # Python version string",
+            "sys.platform               # 'win32', 'linux', 'darwin'",
+            "sys.stdout.write('hello\\n')",
+        ],
+    },
+    "json": {
+        "import": "import json",
+        "examples": [
+            "json.dumps({'key': 'val', 'n': 42})     # dict -> string",
+            "json.dumps(data, indent=2)              # pretty-print",
+            "data = json.loads('{\"key\": \"value\"}')  # string -> dict",
+            "with open('data.json', 'w') as f:",
+            "    json.dump(data, f, indent=2)        # write to file",
+            "with open('data.json') as f:",
+            "    data = json.load(f)                 # read from file",
+        ],
+    },
+    "re": {
+        "import": "import re",
+        "examples": [
+            "re.search(r'\\d+', 'abc123')     # Match object or None",
+            "re.match(r'\\d+', '123abc')      # match at start only",
+            "re.findall(r'\\d+', 'a1 b2 c3') # ['1', '2', '3']",
+            "re.sub(r'\\s+', ' ', text)       # replace whitespace runs",
+            "re.split(r',\\s*', 'a, b, c')   # ['a', 'b', 'c']",
+            "m = re.search(r'(\\w+)@(\\w+)', 'user@host')",
+            "m.group(1)   # 'user'   m.group(2)  # 'host'",
+            "pat = re.compile(r'\\d+')        # compile for reuse",
+        ],
+    },
+    "datetime": {
+        "import": "from datetime import datetime, date, timedelta",
+        "examples": [
+            "datetime.now()                   # current date+time",
+            "datetime.utcnow()                # UTC datetime",
+            "date.today()                     # today's date only",
+            "dt.strftime('%Y-%m-%d %H:%M')    # format to string",
+            "datetime.strptime('2024-01-15', '%Y-%m-%d')  # parse",
+            "dt + timedelta(days=7)           # add 7 days",
+            "(dt2 - dt1).days                 # difference in days",
+        ],
+    },
+    "pathlib": {
+        "import": "from pathlib import Path",
+        "examples": [
+            "p = Path('folder/file.txt')",
+            "p.name          # 'file.txt'",
+            "p.stem          # 'file'",
+            "p.suffix        # '.txt'",
+            "p.parent        # Path('folder')",
+            "p.exists()  p.is_file()  p.is_dir()",
+            "p.read_text()             # file contents as string",
+            "p.write_text('hello')     # write file",
+            "p.mkdir(parents=True, exist_ok=True)",
+            "list(p.glob('**/*.py'))   # recursive glob",
+        ],
+    },
+    "collections": {
+        "import": "from collections import Counter, defaultdict, deque, namedtuple",
+        "examples": [
+            "c = Counter(['a', 'b', 'a', 'c'])   # {'a':2,'b':1,'c':1}",
+            "c.most_common(2)            # [('a',2),('b',1)]",
+            "dd = defaultdict(list)",
+            "dd['key'].append(1)         # no KeyError if missing",
+            "dq = deque([1, 2, 3])",
+            "dq.appendleft(0)  dq.popleft()   # O(1) both ends",
+            "Point = namedtuple('Point', ['x', 'y'])",
+            "p = Point(1, 2)  # p.x -> 1  p.y -> 2",
+        ],
+    },
+    "itertools": {
+        "import": "import itertools",
+        "examples": [
+            "list(itertools.chain([1,2], [3,4]))        # [1,2,3,4]",
+            "list(itertools.chain.from_iterable([[1],[2]]))  # flatten",
+            "list(itertools.combinations([1,2,3], 2))  # pairs",
+            "list(itertools.permutations([1,2,3], 2))  # ordered pairs",
+            "list(itertools.product([0,1], repeat=3))  # cartesian product",
+            "list(itertools.accumulate([1,2,3,4]))      # [1,3,6,10]",
+            "list(itertools.islice(range(100), 5, 10)) # slice of iter",
+        ],
+    },
+    "functools": {
+        "import": "import functools",
+        "examples": [
+            "@functools.lru_cache(maxsize=128)",
+            "def fib(n): return n if n < 2 else fib(n-1) + fib(n-2)",
+            "",
+            "functools.reduce(lambda x, y: x+y, [1,2,3,4])  # 10",
+            "",
+            "double = functools.partial(pow, exp=2)   # partial application",
+            "double(5)  # 25",
+            "",
+            "@functools.wraps(func)  # preserve docstring in decorators",
+        ],
+    },
+    "threading": {
+        "import": "import threading",
+        "examples": [
+            "t = threading.Thread(target=my_func, args=(arg1,))",
+            "t.daemon = True   # dies with main thread",
+            "t.start()         # launch",
+            "t.join()          # wait for finish",
+            "lock = threading.Lock()",
+            "with lock:        # auto-release on scope exit",
+            "    shared_var += 1",
+            "event = threading.Event()",
+            "event.set()  event.wait()  event.clear()",
+        ],
+    },
+    "asyncio": {
+        "import": "import asyncio",
+        "examples": [
+            "async def fetch(url):",
+            "    await asyncio.sleep(1)   # non-blocking wait",
+            "    return 'data'",
+            "",
+            "asyncio.run(fetch('http://example.com'))  # run one coroutine",
+            "",
+            "async def main():",
+            "    results = await asyncio.gather(fetch(u1), fetch(u2))",
+            "",
+            "task = asyncio.create_task(fetch(url))  # fire and forget",
+        ],
+    },
+    "flask": {
+        "import": "from flask import Flask, request, jsonify, render_template",
+        "examples": [
+            "app = Flask(__name__)",
+            "",
+            "@app.route('/')",
+            "def index(): return 'Hello World'",
+            "",
+            "@app.route('/api', methods=['GET', 'POST'])",
+            "def api():",
+            "    data = request.json   # POST body",
+            "    return jsonify({'status': 'ok'})",
+            "",
+            "if __name__ == '__main__': app.run(debug=True, port=5000)",
+        ],
+    },
+    "fastapi": {
+        "import": "from fastapi import FastAPI\nfrom pydantic import BaseModel",
+        "examples": [
+            "app = FastAPI()",
+            "",
+            "@app.get('/')",
+            "def root(): return {'message': 'Hello'}",
+            "",
+            "class Item(BaseModel):",
+            "    name: str",
+            "    price: float",
+            "",
+            "@app.post('/items')",
+            "def create(item: Item): return item",
+            "",
+            "# Run: uvicorn main:app --reload",
+        ],
+    },
+    "subprocess": {
+        "import": "import subprocess",
+        "examples": [
+            "r = subprocess.run(['ls', '-la'], capture_output=True, text=True)",
+            "r.stdout          # output string",
+            "r.returncode      # 0 = success",
+            "r.raise_for_status()  # raises on non-zero",
+            "out = subprocess.check_output(['git', 'log'], text=True)",
+            "subprocess.run('echo hello', shell=True, check=True)",
+        ],
+    },
+    "argparse": {
+        "import": "import argparse",
+        "examples": [
+            "parser = argparse.ArgumentParser(description='My tool')",
+            "parser.add_argument('name')                  # positional",
+            "parser.add_argument('--count', type=int, default=1)",
+            "parser.add_argument('--verbose', '-v', action='store_true')",
+            "parser.add_argument('--out', choices=['json', 'csv'])",
+            "args = parser.parse_args()",
+            "print(args.name, args.count, args.verbose)",
+        ],
+    },
+    "logging": {
+        "import": "import logging",
+        "examples": [
+            "logging.basicConfig(level=logging.INFO,",
+            "    format='%(asctime)s %(levelname)s %(message)s')",
+            "logging.debug('detail')    # only shown at DEBUG level",
+            "logging.info('started')",
+            "logging.warning('low disk')",
+            "logging.error('failed')",
+            "logging.exception('crash') # includes traceback",
+            "logger = logging.getLogger(__name__)",
+            "logger.info('from module')",
+        ],
+    },
+    "math": {
+        "import": "import math",
+        "examples": [
+            "math.sqrt(16)      # 4.0",
+            "math.pow(2, 10)    # 1024.0",
+            "math.floor(3.7)    # 3   math.ceil(3.2)  # 4",
+            "math.log(100, 10)  # 2.0   math.log2(8)  # 3.0",
+            "math.pi            # 3.14159...   math.e  # 2.71828...",
+            "math.factorial(5)  # 120",
+            "math.gcd(12, 8)    # 4",
+            "math.inf           # infinity   math.isnan(x)  # check NaN",
+        ],
+    },
+    "random": {
+        "import": "import random",
+        "examples": [
+            "random.random()              # float in [0.0, 1.0)",
+            "random.randint(1, 10)        # int in [1, 10]",
+            "random.choice([1, 2, 3, 4]) # pick one element",
+            "random.choices([1,2,3], weights=[1,2,1], k=5)",
+            "random.shuffle(my_list)      # shuffle in place",
+            "random.sample([1,2,3,4,5], 3)  # 3 unique picks",
+            "random.seed(42)              # reproducible results",
+        ],
+    },
+    "time": {
+        "import": "import time",
+        "examples": [
+            "time.time()                  # seconds since epoch (float)",
+            "time.sleep(1.5)              # sleep 1.5 seconds",
+            "start = time.perf_counter()  # high-resolution timer",
+            "# ... work ...",
+            "elapsed = time.perf_counter() - start",
+            "time.strftime('%Y-%m-%d %H:%M:%S')  # formatted time string",
+        ],
+    },
+    "csv": {
+        "import": "import csv",
+        "examples": [
+            "with open('data.csv') as f:",
+            "    reader = csv.DictReader(f)",
+            "    for row in reader:",
+            "        print(row['name'], row['age'])",
+            "",
+            "with open('out.csv', 'w', newline='') as f:",
+            "    writer = csv.DictWriter(f, fieldnames=['name', 'age'])",
+            "    writer.writeheader()",
+            "    writer.writerow({'name': 'Alice', 'age': 30})",
+        ],
+    },
+    "shutil": {
+        "import": "import shutil",
+        "examples": [
+            "shutil.copy('src.txt', 'dst.txt')        # copy file",
+            "shutil.copytree('src_dir', 'dst_dir')    # copy directory",
+            "shutil.move('old_path', 'new_path')      # move/rename",
+            "shutil.rmtree('dir_to_delete')           # delete directory tree",
+            "shutil.make_archive('backup', 'zip', 'folder/')",
+            "shutil.unpack_archive('backup.zip', 'out/')",
+        ],
+    },
+    "typing": {
+        "import": "from typing import List, Dict, Optional, Tuple, Union, Any, Callable",
+        "examples": [
+            "def greet(name: str) -> str:",
+            "    return f'Hello {name}'",
+            "",
+            "def process(items: List[int]) -> Dict[str, int]:",
+            "    return {'sum': sum(items)}",
+            "",
+            "def find(x: Optional[int] = None) -> Optional[str]:",
+            "    return str(x) if x is not None else None",
+            "",
+            "# Python 3.10+: use X | Y instead of Union[X, Y]",
+        ],
+    },
+    "pydantic": {
+        "import": "from pydantic import BaseModel, Field",
+        "examples": [
+            "class User(BaseModel):",
+            "    name: str",
+            "    age: int",
+            "    email: str = Field(..., pattern=r'.+@.+')",
+            "",
+            "u = User(name='Alice', age=30, email='a@b.com')",
+            "u.model_dump()        # -> dict",
+            "u.model_json_schema() # JSON schema",
+        ],
+    },
+    "sklearn": {
+        "import": "from sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler",
+        "examples": [
+            "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)",
+            "scaler = StandardScaler()",
+            "X_train = scaler.fit_transform(X_train)",
+            "X_test  = scaler.transform(X_test)",
+            "from sklearn.ensemble import RandomForestClassifier",
+            "clf = RandomForestClassifier(n_estimators=100)",
+            "clf.fit(X_train, y_train)",
+            "clf.predict(X_test)",
+            "clf.score(X_test, y_test)  # accuracy",
+        ],
+    },
+    "torch": {
+        "import": "import torch\nimport torch.nn as nn",
+        "examples": [
+            "t = torch.tensor([1.0, 2.0, 3.0])",
+            "torch.zeros(3, 4)  torch.ones(3, 4)  torch.randn(3, 4)",
+            "t.shape  t.dtype  t.device",
+            "t.to('cuda')       # move to GPU",
+            "t.numpy()          # to NumPy (CPU only)",
+            "model = nn.Sequential(nn.Linear(10, 64), nn.ReLU(), nn.Linear(64, 1))",
+            "loss_fn = nn.MSELoss()",
+            "optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)",
+        ],
+    },
+    "sqlalchemy": {
+        "import": "from sqlalchemy import create_engine, Column, Integer, String\nfrom sqlalchemy.orm import declarative_base, Session",
+        "examples": [
+            "engine = create_engine('sqlite:///db.sqlite3')",
+            "Base = declarative_base()",
+            "class User(Base):",
+            "    __tablename__ = 'users'",
+            "    id   = Column(Integer, primary_key=True)",
+            "    name = Column(String)",
+            "Base.metadata.create_all(engine)",
+            "with Session(engine) as s:",
+            "    s.add(User(name='Alice'))  s.commit()",
+            "    users = s.query(User).filter_by(name='Alice').all()",
+        ],
+    },
+    "socket": {
+        "import": "import socket",
+        "examples": [
+            "# TCP client",
+            "with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:",
+            "    s.connect(('localhost', 8080))",
+            "    s.sendall(b'Hello')",
+            "    data = s.recv(1024)",
+            "# TCP server",
+            "with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:",
+            "    s.bind(('', 8080))  s.listen()",
+            "    conn, addr = s.accept()",
+            "    with conn: data = conn.recv(1024)",
+            "socket.gethostname()",
+            "socket.gethostbyname('example.com')",
+        ],
+    },
+    "hashlib": {
+        "import": "import hashlib",
+        "examples": [
+            "h = hashlib.sha256('hello'.encode())",
+            "h.hexdigest()      # hex string of hash",
+            "hashlib.md5(b'data').hexdigest()",
+            "# Hash a file",
+            "h = hashlib.sha256()",
+            "with open('file.bin', 'rb') as f:",
+            "    for chunk in iter(lambda: f.read(4096), b''):",
+            "        h.update(chunk)",
+            "h.hexdigest()",
+        ],
+    },
+    "copy": {
+        "import": "import copy",
+        "examples": [
+            "a = [[1, 2], [3, 4]]",
+            "b = copy.copy(a)       # shallow -- nested lists still shared",
+            "b[0].append(99)        # also modifies a[0]!",
+            "c = copy.deepcopy(a)   # fully independent",
+            "c[0].append(99)        # does NOT affect a",
+        ],
+    },
+    "contextlib": {
+        "import": "from contextlib import contextmanager, suppress",
+        "examples": [
+            "@contextmanager",
+            "def managed():",
+            "    resource = acquire()",
+            "    try:",
+            "        yield resource",
+            "    finally:",
+            "        release(resource)",
+            "",
+            "with managed() as r: use(r)",
+            "",
+            "with suppress(FileNotFoundError):  # swallow specific error",
+            "    os.remove('maybe_missing.txt')",
+        ],
+    },
+    "abc": {
+        "import": "from abc import ABC, abstractmethod",
+        "examples": [
+            "class Shape(ABC):",
+            "    @abstractmethod",
+            "    def area(self) -> float: ...",
+            "",
+            "class Circle(Shape):",
+            "    def __init__(self, r): self.r = r",
+            "    def area(self): return 3.14159 * self.r ** 2",
+            "",
+            "# Shape()  # TypeError -- can't instantiate abstract class",
+            "Circle(5).area()  # works",
+        ],
+    },
+}
+
 def _pypi(pkg: str) -> Optional[dict]:
     try:
         r = requests.get(f"https://pypi.org/pypi/{pkg}/json", timeout=10)
@@ -72,6 +554,36 @@ def _pydoc(mod: str) -> Optional[str]:
         pass
     return None
 
+def _print_python_quickstart(name: str):
+    """Print import line + usage examples. Always runs first."""
+    key = name.lower()
+    qs  = _PYTHON_QUICKSTART.get(key)
+
+    if qs:
+        imp_line = qs["import"]
+        examples = qs["examples"]
+    else:
+        # Auto-generate a best-guess import for anything not in the dict
+        imp_line = f"import {key}"
+        examples = []
+
+    console.print(f"\n[bold yellow]Import:[/bold yellow]")
+    if RICH:
+        console.print(Syntax(imp_line, "python", theme="monokai"))
+    else:
+        for ln in imp_line.splitlines():
+            console.print(f"  {ln}")
+
+    if examples:
+        console.print(f"\n[bold yellow]Quick start:[/bold yellow]")
+        block = "\n".join(examples)
+        if RICH:
+            console.print(Syntax(block, "python", theme="monokai"))
+        else:
+            for ln in examples:
+                console.print(f"  {ln}" if ln else "")
+
+
 def show_python(pkg: str):
     console.print(f"\n[bold cyan]Python docs ->[/bold cyan] [bold white]{pkg}[/bold white]\n")
 
@@ -87,13 +599,16 @@ def show_python(pkg: str):
         docs   = urls.get("Documentation") or urls.get("Docs") or ""
         req_py = info.get("requires_python") or ""
 
+        # -- always show import + examples first --
+        _print_python_quickstart(name)
+
         if RICH:
             console.print(Panel(
                 f"[bold white]{name}[/bold white]  [dim]v{ver}[/dim]\n\n{summary}",
                 title="[bold green]PyPI Package[/bold green]", border_style="green"
             ))
         else:
-            console.print(f"=== {name} v{ver} ===\n{summary}")
+            console.print(f"\n=== {name} v{ver} ===\n{summary}")
 
         console.print(f"\n[bold yellow]Install:[/bold yellow]")
         if RICH:
@@ -110,20 +625,20 @@ def show_python(pkg: str):
         if docs: console.print(f"  Docs   -> {docs}")
 
         if desc and desc not in ("UNKNOWN", ""):
-            console.print(f"\n[bold yellow]Description (first 2 000 chars):[/bold yellow]")
-            # strip non-ASCII so Windows cp1252 terminal does not choke
-            snippet = desc[:2000].encode("ascii", errors="replace").decode("ascii")
+            console.print(f"\n[bold yellow]Description:[/bold yellow]")
+            snippet = desc[:1500].encode("ascii", errors="replace").decode("ascii")
             console.print(snippet)
         return
 
-    # fallback: stdlib via pydoc
+    # fallback: stdlib via pydoc -- show quickstart first
+    _print_python_quickstart(pkg)
     out = _pydoc(pkg)
     if out:
         if RICH:
-            console.print(Panel(out[:4000],
+            console.print(Panel(out[:3000],
                 title=f"[bold green]Python stdlib | {pkg}[/bold green]", border_style="green"))
         else:
-            console.print(out[:4000])
+            console.print(out[:3000])
         return
 
     console.print(f"[red]Nothing found for '{pkg}'.[/red]")

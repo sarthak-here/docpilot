@@ -273,10 +273,12 @@ class DocPilotApp(tk.Tk):
             elif stripped.startswith('http') or 'https://' in stripped:
                 self.textbox.insert('end', line + '\n', 'url')
 
-            # install / include / reference lines
+            # import / include / install / reference lines
             elif any(stripped.startswith(k) for k in
                      ('pip install', '#include', 'Install:', 'Include:',
-                      'Reference:', 'Links:', '  pip', '  #include')):
+                      'Reference:', 'Links:', 'Import:', 'Quick start:',
+                      'import ', 'from ', '  pip', '  #include',
+                      '  import ', '  from ')):
                 self.textbox.insert('end', line + '\n', 'code')
 
             # indented code (likely a code example)
