@@ -14,6 +14,8 @@ import sys
 import re
 import threading
 import os
+import socket
+import time
 
 # path to docpilot.py (same folder as this file)
 DOCPILOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'docpilot.py')
@@ -55,12 +57,19 @@ class DocPilotApp(tk.Tk):
         # float on top of VS Code by default
         self.attributes('-topmost', True)
 
+        # track the ollama process so we can kill it on close
+        self._ollama_proc = None   # set only if WE started it
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
         self._build_ui()
         self._bind_keys()
 
         # greet
         self._set_text(WELCOME)
         self.search_entry.focus_set()
+
+        # start Ollama in the background so AI features are ready quickly
+        threading.Thread(target=self._ensure_ollama, daemon=True).start()
 
     # ── UI construction ────────────────────────────────────────────────────────
 
@@ -198,6 +207,63 @@ class DocPilotApp(tk.Tk):
             self.statusbar.configure(
                 text="  Enter to search  |  Ctrl+L to clear  |  Esc to minimise"
             )
+
+    # ── Ollama lifecycle ───────────────────────────────────────────────────────
+
+    def _ollama_running(self) -> bool:
+        try:
+            with socket.create_connection(('localhost', 11434), timeout=1):
+                return True
+        except Exception:
+            return False
+
+    def _ensure_ollama(self):
+        """Called in a background thread on startup."""
+        if self._ollama_running():
+            self.after(0, lambda: self.statusbar.configure(
+                text="  AI ready  |  Enter to search  |  Ctrl+L to clear  |  Esc to minimise"
+            ))
+            return
+
+        self.after(0, lambda: self.statusbar.configure(
+            text="  Starting AI (Ollama)..."
+        ))
+
+        kwargs = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
+        if sys.platform == 'win32':
+            kwargs['creationflags'] = 0x08000000  # CREATE_NO_WINDOW
+
+        try:
+            self._ollama_proc = subprocess.Popen(['ollama', 'serve'], **kwargs)
+        except FileNotFoundError:
+            self.after(0, lambda: self.statusbar.configure(
+                text="  Ollama not found -- AI features disabled  |  Enter to search"
+            ))
+            return
+
+        # wait up to 20 s for the server to be ready
+        for _ in range(40):
+            time.sleep(0.5)
+            if self._ollama_running():
+                self.after(0, lambda: self.statusbar.configure(
+                    text="  AI ready  |  Enter to search  |  Ctrl+L to clear  |  Esc to minimise"
+                ))
+                return
+
+        self.after(0, lambda: self.statusbar.configure(
+            text="  AI startup timed out  |  Enter to search  |  Ctrl+L to clear"
+        ))
+
+    def _on_close(self):
+        """Kill ollama (if we started it) then close the window."""
+        if self._ollama_proc is not None:
+            try:
+                self._ollama_proc.terminate()
+            except Exception:
+                pass
+        self.destroy()
+
+    # ── interaction ────────────────────────────────────────────────────────────
 
     def _toggle_pin(self):
         self.attributes('-topmost', self.pin_var.get())
