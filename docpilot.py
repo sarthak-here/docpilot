@@ -1034,7 +1034,74 @@ Examples
     elif args.cmd == "list":
         show_list(args.category)
     else:
-        ap.print_help()
+        _repl()
+
+
+def _repl():
+    """Interactive mode — runs when docpilot is started with no arguments."""
+    if RICH:
+        console.print(Panel(
+            "[bold white]DocPilot[/bold white]  [dim]—  instant docs while you code[/dim]\n\n"
+            "[cyan]python[/cyan] [white]<pkg>[/white]     PyPI package or stdlib module\n"
+            "[cyan]linux[/cyan]  [white]<cmd>[/white]     Linux command  (TLDR + man link)\n"
+            "[cyan]cpp[/cyan]    [white]<topic>[/white]   C++ STL reference + code example\n"
+            "[cyan]search[/cyan] [white]<term>[/white]    Search all three languages\n"
+            "[cyan]list[/cyan]              Browse all C++ STL topics\n\n"
+            "[dim]Type  q  or  exit  to quit.[/dim]",
+            title="[bold green]DocPilot[/bold green]",
+            border_style="green"
+        ))
+    else:
+        print("DocPilot — type: python <pkg> | linux <cmd> | cpp <topic> | search <term> | list | q")
+
+    while True:
+        try:
+            if RICH:
+                raw = console.input("\n[bold green]>[/bold green] ").strip()
+            else:
+                raw = input("\n> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print("\n[dim]bye[/dim]")
+            break
+
+        if not raw:
+            continue
+        if raw.lower() in ("q", "quit", "exit", "bye"):
+            console.print("[dim]bye[/dim]")
+            break
+
+        parts = raw.split(None, 1)
+        cmd   = parts[0].lower()
+        rest  = parts[1].strip() if len(parts) > 1 else ""
+
+        if cmd in ("python", "py"):
+            if rest:
+                show_python(rest)
+            else:
+                console.print("[red]Usage:  python <package>[/red]")
+        elif cmd in ("linux", "lx", "cmd"):
+            if rest:
+                show_linux(rest)
+            else:
+                console.print("[red]Usage:  linux <command>[/red]")
+        elif cmd in ("cpp", "c++", "cxx"):
+            if rest:
+                show_cpp(rest)
+            else:
+                console.print("[red]Usage:  cpp <topic>[/red]")
+        elif cmd in ("search", "s", "find"):
+            if rest:
+                show_search(rest)
+            else:
+                console.print("[red]Usage:  search <term>[/red]")
+        elif cmd == "list":
+            show_list(rest or None)
+        elif cmd in ("help", "h", "?"):
+            console.print("[cyan]python[/cyan] <pkg>  |  [cyan]linux[/cyan] <cmd>  |  [cyan]cpp[/cyan] <topic>  |  [cyan]search[/cyan] <term>  |  [cyan]list[/cyan]  |  [cyan]q[/cyan]")
+        else:
+            # try auto-detect: single word -> search all
+            console.print(f"[dim]Searching all languages for '{raw}'...[/dim]")
+            show_search(raw)
 
 
 if __name__ == "__main__":
