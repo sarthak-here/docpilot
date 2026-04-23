@@ -221,13 +221,26 @@ class DocPilotApp(tk.Tk):
             return
 
         lang = self.lang_var.get()
-        self.statusbar.configure(text=f"  searching {lang}: {query} ...")
+        if lang == 'ask':
+            status_msg = f"  asking AI: {query[:60]} ..."
+            loading_msg = "  asking AI for tech-stack advice...\n  (may take 10-30 seconds)"
+        elif lang == 'python':
+            status_msg = f"  looking up: {query} ..."
+            loading_msg = "  fetching docs...  (may call AI if no examples found)"
+        else:
+            status_msg = f"  searching {lang}: {query} ..."
+            loading_msg = "  fetching docs..."
+        self.statusbar.configure(text=status_msg)
         self.go_btn.configure(state='disabled', text='...')
-        self._set_text("  fetching docs...")
+        self._set_text(loading_msg)
 
         def worker():
-            # ask mode calls a local LLM which can take much longer
-            timeout = 120 if lang == 'ask' else 20
+            # python mode may call Ollama when no examples exist in the dict/README
+            # ask mode always calls Ollama -- both need a generous timeout
+            if lang in ('ask', 'python'):
+                timeout = 120
+            else:
+                timeout = 20
             try:
                 # 'ask' query may be multiple words -- pass as a single argument list
                 cmd = [sys.executable, DOCPILOT, lang] + (

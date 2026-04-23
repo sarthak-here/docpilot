@@ -1014,10 +1014,12 @@ def _print_python_quickstart(name: str, desc: str = ""):
                 for ln in clean.splitlines():
                     console.print(f"  {ln}")
             if i < len(raw_blocks) - 1:
-                console.print()     # blank line between blocks
+                console.print()
 
-    else:
-        # No dict entry and no README examples -- ask the local LLM
+    # For any package not in the hand-crafted dict, always ask Ollama too.
+    # This runs after README examples (if any) so the AI adds real-world context
+    # on top of what the README already shows.
+    if not dict_examples:
         ok, model = _ollama_available()
         if ok:
             console.print(f"\n[dim]  asking {model} for examples...[/dim]")
@@ -1029,9 +1031,8 @@ def _print_python_quickstart(name: str, desc: str = ""):
                 f"2. 6-10 practical, real-world usage examples with short # comments\n"
                 f"Cover the most commonly used features. Be concise. No markdown fences."
             )
-            ai_code = _ollama_generate(prompt, model)
+            ai_code = _ollama_generate(prompt, model, timeout=90)
             if ai_code:
-                # strip any accidental markdown fences the model may add
                 ai_code = re.sub(r'^```[a-z]*\n?', '', ai_code, flags=re.MULTILINE)
                 ai_code = re.sub(r'\n?```$', '', ai_code, flags=re.MULTILINE)
                 ai_code = ai_code.strip()
