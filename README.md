@@ -18,7 +18,7 @@ Instant terminal documentation for Python libraries, Linux commands, and C++ STL
 
 Double-click **`launch.bat`** to open a floating documentation window that stays on top of your editor.
 
-![DocPilot GUI](https://img.shields.io/badge/GUI-VS%20Code%20dark%20theme-007acc)
+![DocPilot GUI](./docpilot.png)
 
 - Pick a language from the dropdown, type what you want, press **Enter**
 - Window floats over VS Code / Jupyter by default (click **📌 pin** to toggle)
