@@ -30,6 +30,29 @@ Double-click **`launch.bat`** to open a floating documentation window that stays
 pythonw gui.py
 ```
 
+## AI-powered examples (optional)
+
+DocPilot uses a local LLM via **Ollama** for two things:
+
+- **Fallback examples** — if a package isn't in the built-in docs, it automatically asks the AI for code examples
+- **Ask AI button** — in the GUI, click **Ask AI** to get an AI-generated explanation for any query
+
+Preferred model is `gemma4`, but DocPilot will use any model you have installed (gemma3, gemma2, llama3, mistral, etc.).
+
+### Setup Ollama (optional but recommended)
+
+1. Download and install Ollama from [https://ollama.com](https://ollama.com)
+2. Pull a model:
+```bash
+ollama pull gemma4
+```
+3. Make sure Ollama is running before launching DocPilot:
+```bash
+ollama serve
+```
+
+If Ollama is not running, DocPilot still works fine — AI features are silently skipped.
+
 ## Install
 
 ```bash
